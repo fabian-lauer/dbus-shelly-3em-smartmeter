@@ -1,0 +1,3 @@
+#!/bin/sh
+exec 2>&1
+python /data/dbus-shelly-3em-smartmeter/dbus-shelly-3em-smartmeter.py
