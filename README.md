@@ -73,4 +73,5 @@ The "DEFAULT" section is not used / has no alternatives at the moment.
 
 ## Used documentation
 - https://github.com/victronenergy/venus/wiki/dbus#grid   DBus paths for Victron namespace
+- https://github.com/victronenergy/venus/wiki/dbus-api   DBus API from Victron
 - https://www.victronenergy.com/live/ccgx:root_access   How to get root access on GX device/Venus OS
