@@ -17,3 +17,7 @@ This project is my first on GitHub and with the Victron Venus OS, so I took some
 ## Install
 
 ## Configuration
+
+## Used documentation
+[^1]: https://github.com/victronenergy/venus/wiki/dbus#grid
+  DBus paths for Victron namespace
