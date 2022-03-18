@@ -5,12 +5,15 @@ Integrate Shelly 3EM smart meter into Victron Energies Venus OS
 With the scripts in this repro it should be easy possible to install, uninstall, restart a service that connects the Shelly 3EM to the VenusOS and GX devices from Victron.
 Idea is pasend on @RalfZim project linked below
 
+
+
 ## Inspiration
 This project is my first on GitHub and with the Victron Venus OS, so I took some ideas and approaches from the following projects - many thanks for sharing the knowledge:
 - https://github.com/RalfZim/venus.dbus-fronius-smartmeter
 - https://github.com/victronenergy/dbus-smappee
 - https://github.com/Louisvdw/dbus-serialbattery
 - https://community.victronenergy.com/questions/85564/eastron-sdm630-modbus-energy-meter-community-editi.html
+
 
 
 ## How it works
@@ -28,7 +31,7 @@ This project is my first on GitHub and with the Victron Venus OS, so I took some
 As mentioned above the script is inspired by @RalfZim fronius smartmeter implementation.
 So what is the script doing:
 - Running as a service
-- connecting to DBus of the Venus OS "com.victronenergy.grid.http_40"
+- connecting to DBus of the Venus OS `com.victronenergy.grid.http_40`
 - After successful DBus connection Shelly 3EM is accessed via REST-API - simply the /status is called and a JSON is returned with all details
 - Serial/MAC is taken from the response as device serial
 - Paths are added to the DBus with default value 0 - including some settings like name, etc
@@ -36,8 +39,16 @@ So what is the script doing:
 
 Thats it 😄
 
-## Install
-Just grap a copy of the main branche and copy them to /data/dbus-shelly-3em-smartmeter.
+### Pictures
+![Remote Console - Overview](img/venus-os-remote-console-overview.PNG) 
+![SmartMeter - Values](img/venus-os-shelly3em-smartmeter.PNG)
+![SmartMeter - Device Details](img/venus-os-shelly3em-smartmeter-devicedetails.PNG)
+
+
+
+## Install & Configuration
+### Get the code
+Just grap a copy of the main branche and copy them to `/data/dbus-shelly-3em-smartmeter`.
 After that call the install.sh script.
 
 The following script should do everything for you:
@@ -51,9 +62,11 @@ rm main.zip
 ```
 ⚠️ Check configuration after that - because service is already installed an running and with wrong connection data (host, username, pwd) you will spam the log-file
 
-## Configuration
-Within the project there is a file 'config.ini' - just change the values - most important is the host, username and password in section "ONPREMISE".
+### Change config.ini
+Within the project there is a file `/data/dbus-shelly-3em-smartmeter/config.ini` - just change the values - most important is the host, username and password in section "ONPREMISE".
 The "DEFAULT" section is not used / has no alternatives at the moment.
+
+
 
 ## Used documentation
 - https://github.com/victronenergy/venus/wiki/dbus#grid   DBus paths for Victron namespace
