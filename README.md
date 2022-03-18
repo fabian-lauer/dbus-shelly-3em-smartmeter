@@ -2,8 +2,8 @@
 Integrate Shelly 3EM smart meter into Victron Energies Venus OS
 
 ## Purpose
-With the scripts in this repro it should be easy possible to install, uninstall, restart a service that connects the Shelly 3EM to the VenusOS and GX devices from Victron.
-Idea is pasend on @RalfZim project linked below
+With the scripts in this repo it should be easy possible to install, uninstall, restart a service that connects the Shelly 3EM to the VenusOS and GX devices from Victron.
+Idea is pasend on @RalfZim project linked below.
 
 
 
@@ -22,7 +22,7 @@ This project is my first on GitHub and with the Victron Venus OS, so I took some
   - 3-Phase installation (normal for Germany)
   - Connected to Wifi netowrk "A"
   - IP 192.168.2.108/24  
-- Victron Energy Cerbro GX with Venus OS - Firmware v2.84
+- Victron Energy Cerbo GX with Venus OS - Firmware v2.84
   - No other devices from Victron connected (still waiting for shipment of Multiplus-2)
   - Connected to Wifi netowrk "A"
   - IP 192.168.2.110/24
@@ -36,7 +36,7 @@ So what is the script doing:
   A sample JSON file from Shelly 3EM can be found [here](docs/shelly3em-status-sample.json)
 - Serial/MAC is taken from the response as device serial
 - Paths are added to the DBus with default value 0 - including some settings like name, etc
-- After that a "loop" is started which pulls Shelly 3EM data every 750ms from the REST-API and updates the values in the DBUS
+- After that a "loop" is started which pulls Shelly 3EM data every 750ms from the REST-API and updates the values in the DBus
 
 Thats it 😄
 
