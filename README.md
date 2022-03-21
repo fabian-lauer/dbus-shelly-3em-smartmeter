@@ -66,8 +66,15 @@ rm main.zip
 ⚠️ Check configuration after that - because service is already installed an running and with wrong connection data (host, username, pwd) you will spam the log-file
 
 ### Change config.ini
-Within the project there is a file `/data/dbus-shelly-3em-smartmeter/config.ini` - just change the values - most important is the host, username and password in section "ONPREMISE".
-The "DEFAULT" section is not used / has no alternatives at the moment.
+Within the project there is a file `/data/dbus-shelly-3em-smartmeter/config.ini` - just change the values - most important is the host, username and password in section "ONPREMISE". More details below:
+
+| Section  | Config vlaue | Explanation |
+| ------------- | ------------- | ------------- |
+| DEFAULT  | AccessType | Fixed value 'OnPremise' |
+| DEFAULT  | SignOfLifeLog  | Time in minutes how often a status is added to the log-file `current.log` with log-level INFO |
+| ONPREMISE  | Host | IP or hostname of on-premise Shelly 3EM web-interface |
+| ONPREMISE  | Username | Username for htaccess login - leave blank if no username/password required |
+| ONPREMISE  | Password | Password for htaccess login - leave blank if no username/password required |
 
 
 
@@ -75,3 +82,7 @@ The "DEFAULT" section is not used / has no alternatives at the moment.
 - https://github.com/victronenergy/venus/wiki/dbus#grid   DBus paths for Victron namespace
 - https://github.com/victronenergy/venus/wiki/dbus-api   DBus API from Victron
 - https://www.victronenergy.com/live/ccgx:root_access   How to get root access on GX device/Venus OS
+
+## Discussions on the web
+This module/repository has been posted on the following threads:
+- https://community.victronenergy.com/questions/125793/shelly-3em-smartmeter-with-venusos-cerbo-gx.html
