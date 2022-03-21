@@ -35,7 +35,7 @@ class DbusShelly3emService:
     # Create the mandatory objects
     self._dbusservice.add_path('/DeviceInstance', deviceinstance)
     #self._dbusservice.add_path('/ProductId', 16) # value used in ac_sensor_bridge.cpp of dbus-cgwacs
-    self._dbusservice.add_path('/ProductId', 0xB023) # id assigned by Victron Support from SDM630v2.py
+    self._dbusservice.add_path('/ProductId', 0xFFFF) # id assigned by Victron Support from SDM630v2.py
     self._dbusservice.add_path('/ProductName', productname)
     self._dbusservice.add_path('/CustomName', productname)    
     self._dbusservice.add_path('/Latency', None)    
@@ -47,12 +47,19 @@ class DbusShelly3emService:
     self._dbusservice.add_path('/Serial', self._getShellySerial())
     self._dbusservice.add_path('/UpdateIndex', 0)
  
+    # add path values to dbus
     for path, settings in self._paths.items():
       self._dbusservice.add_path(
         path, settings['initial'], gettextcallback=settings['textformat'], writeable=True, onchangecallback=self._handlechangedvalue)
  
-    gobject.timeout_add(750, self._update) # pause 750ms before the next request
+    # last update
+    self._lastUpdate = 0
  
+    # add _update function 'timer'
+    gobject.timeout_add(250, self._update) # pause 250ms before the next request
+    
+    # add _signOfLife 'timer' to get feedback in log every 5minutes
+    gobject.timeout_add(self._getSignOfLifeInterval()*60*1000, self._signOfLife)
  
   def _getShellySerial(self):
     meter_data = self._getShellyData()  
@@ -69,6 +76,16 @@ class DbusShelly3emService:
     config.read("%s/config.ini" % (os.path.dirname(os.path.realpath(__file__))))
     return config;
  
+ 
+  def _getSignOfLifeInterval(self):
+    config = self._getConfig()
+    value = config['DEFAULT']['SignOfLifeLog']
+    
+    if not value: 
+        value = 0
+    
+    return int(value)
+  
   
   def _getShellyStatusUrl(self):
     config = self._getConfig()
@@ -101,45 +118,57 @@ class DbusShelly3emService:
     return meter_data
  
  
-  def _update(self):   
-    #get data from Shelly 3em
-    meter_data = self._getShellyData()
-    
-    #send data to DBus
-    self._dbusservice['/Ac/Power'] = meter_data['total_power'] # positive: consumption, negative: feed into grid
-    self._dbusservice['/Ac/L1/Voltage'] = meter_data['emeters'][0]['voltage']
-    self._dbusservice['/Ac/L2/Voltage'] = meter_data['emeters'][1]['voltage']
-    self._dbusservice['/Ac/L3/Voltage'] = meter_data['emeters'][2]['voltage']
-    self._dbusservice['/Ac/L1/Current'] = meter_data['emeters'][0]['current']
-    self._dbusservice['/Ac/L2/Current'] = meter_data['emeters'][1]['current']
-    self._dbusservice['/Ac/L3/Current'] = meter_data['emeters'][2]['current']
-    self._dbusservice['/Ac/L1/Power'] = meter_data['emeters'][0]['power']
-    self._dbusservice['/Ac/L2/Power'] = meter_data['emeters'][1]['power']
-    self._dbusservice['/Ac/L3/Power'] = meter_data['emeters'][2]['power']
-    self._dbusservice['/Ac/L1/Energy/Forward'] = meter_data['emeters'][0]['power']/1000 if meter_data['emeters'][0]['power'] > 0 else 0 
-    self._dbusservice['/Ac/L2/Energy/Forward'] = meter_data['emeters'][1]['power']/1000 if meter_data['emeters'][1]['power'] > 0 else 0
-    self._dbusservice['/Ac/L3/Energy/Forward'] = meter_data['emeters'][2]['power']/1000 if meter_data['emeters'][2]['power'] > 0 else 0
-    self._dbusservice['/Ac/L1/Energy/Reverse'] = (meter_data['emeters'][0]['power']*-1/1000) if meter_data['emeters'][0]['power'] < 0 else 0
-    self._dbusservice['/Ac/L2/Energy/Reverse'] = (meter_data['emeters'][1]['power']*-1/1000) if meter_data['emeters'][1]['power'] < 0 else 0
-    self._dbusservice['/Ac/L3/Energy/Reverse'] = (meter_data['emeters'][2]['power']*-1/1000) if meter_data['emeters'][2]['power'] < 0 else 0    
-    self._dbusservice['/Ac/Energy/Forward'] = self._dbusservice['/Ac/L1/Energy/Forward'] + self._dbusservice['/Ac/L2/Energy/Forward'] + self._dbusservice['/Ac/L3/Energy/Forward']
-    self._dbusservice['/Ac/Energy/Reverse'] = self._dbusservice['/Ac/L1/Energy/Reverse'] + self._dbusservice['/Ac/L2/Energy/Reverse'] + self._dbusservice['/Ac/L3/Energy/Reverse'] 
-    
-    #logging
-    logging.debug("House Consumption (/Ac/Power): %s" % (self._dbusservice['/Ac/Power']))
-    logging.debug("House Forward (/Ac/Energy/Forward): %s" % (self._dbusservice['/Ac/Energy/Forward']))
-    logging.debug("House Reverse (/Ac/Energy/Revers): %s" % (self._dbusservice['/Ac/Energy/Reverse']))
-    logging.debug("---");
-
-    # increment UpdateIndex - to show that new data is available
-    index = self._dbusservice['/UpdateIndex'] + 1  # increment index
-    if index > 255:   # maximum value of the index
-      index = 0       # overflow from 255 to 0
-    self._dbusservice['/UpdateIndex'] = index
-
-
+  def _signOfLife(self):
+    logging.info("--- Start: sign of life ---")
+    logging.info("Last _update() call: %s" % (self._lastUpdate))
+    logging.info("Last '/Ac/Power': %s" % (self._dbusservice['/Ac/Power']))
+    logging.info("--- End: sign of life ---")
     return True
  
+  def _update(self):   
+    try:
+       #get data from Shelly 3em
+       meter_data = self._getShellyData()
+       
+       #send data to DBus
+       self._dbusservice['/Ac/Power'] = meter_data['total_power'] # positive: consumption, negative: feed into grid
+       self._dbusservice['/Ac/L1/Voltage'] = meter_data['emeters'][0]['voltage']
+       self._dbusservice['/Ac/L2/Voltage'] = meter_data['emeters'][1]['voltage']
+       self._dbusservice['/Ac/L3/Voltage'] = meter_data['emeters'][2]['voltage']
+       self._dbusservice['/Ac/L1/Current'] = meter_data['emeters'][0]['current']
+       self._dbusservice['/Ac/L2/Current'] = meter_data['emeters'][1]['current']
+       self._dbusservice['/Ac/L3/Current'] = meter_data['emeters'][2]['current']
+       self._dbusservice['/Ac/L1/Power'] = meter_data['emeters'][0]['power']
+       self._dbusservice['/Ac/L2/Power'] = meter_data['emeters'][1]['power']
+       self._dbusservice['/Ac/L3/Power'] = meter_data['emeters'][2]['power']
+       self._dbusservice['/Ac/L1/Energy/Forward'] = meter_data['emeters'][0]['power']/1000 if meter_data['emeters'][0]['power'] > 0 else 0 
+       self._dbusservice['/Ac/L2/Energy/Forward'] = meter_data['emeters'][1]['power']/1000 if meter_data['emeters'][1]['power'] > 0 else 0
+       self._dbusservice['/Ac/L3/Energy/Forward'] = meter_data['emeters'][2]['power']/1000 if meter_data['emeters'][2]['power'] > 0 else 0
+       self._dbusservice['/Ac/L1/Energy/Reverse'] = (meter_data['emeters'][0]['power']*-1/1000) if meter_data['emeters'][0]['power'] < 0 else 0
+       self._dbusservice['/Ac/L2/Energy/Reverse'] = (meter_data['emeters'][1]['power']*-1/1000) if meter_data['emeters'][1]['power'] < 0 else 0
+       self._dbusservice['/Ac/L3/Energy/Reverse'] = (meter_data['emeters'][2]['power']*-1/1000) if meter_data['emeters'][2]['power'] < 0 else 0    
+       self._dbusservice['/Ac/Energy/Forward'] = self._dbusservice['/Ac/L1/Energy/Forward'] + self._dbusservice['/Ac/L2/Energy/Forward'] + self._dbusservice['/Ac/L3/Energy/Forward']
+       self._dbusservice['/Ac/Energy/Reverse'] = self._dbusservice['/Ac/L1/Energy/Reverse'] + self._dbusservice['/Ac/L2/Energy/Reverse'] + self._dbusservice['/Ac/L3/Energy/Reverse'] 
+       
+       #logging
+       logging.debug("House Consumption (/Ac/Power): %s" % (self._dbusservice['/Ac/Power']))
+       logging.debug("House Forward (/Ac/Energy/Forward): %s" % (self._dbusservice['/Ac/Energy/Forward']))
+       logging.debug("House Reverse (/Ac/Energy/Revers): %s" % (self._dbusservice['/Ac/Energy/Reverse']))
+       logging.debug("---");
+       
+       # increment UpdateIndex - to show that new data is available
+       index = self._dbusservice['/UpdateIndex'] + 1  # increment index
+       if index > 255:   # maximum value of the index
+         index = 0       # overflow from 255 to 0
+       self._dbusservice['/UpdateIndex'] = index
+
+       #update lastupdate vars
+       self._lastUpdate = time.time()              
+    except Exception as e:
+       logging.critical('Error at %s', '_update', exc_info=e)
+       
+    # return true, otherwise add_timeout will be removed from GObject - see docs http://library.isr.ist.utl.pt/docs/pygtk2reference/gobject-functions.html#function-gobject--timeout-add
+    return True
  
   def _handlechangedvalue(self, path, value):
     logging.debug("someone else updated %s to %s" % (path, value))
@@ -201,8 +230,8 @@ def main():
      
       logging.info('Connected to dbus, and switching over to gobject.MainLoop() (= event based)')
       mainloop = gobject.MainLoop()
-      mainloop.run()
+      mainloop.run()            
   except Exception as e:
-    logging.error('Error at %s', 'main', exc_info=e)
+    logging.critical('Error at %s', 'main', exc_info=e)
 if __name__ == "__main__":
   main()
