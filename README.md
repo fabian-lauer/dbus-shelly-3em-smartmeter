@@ -1,5 +1,5 @@
 # dbus-shelly-3em-smartmeter
-Integrate Shelly 3EM smart meter into Victron Energies Venus OS
+Integrate Shelly 3EM smart meter into [Victron Energies Venus OS](https://github.com/victronenergy/venus)
 
 ## Purpose
 With the scripts in this repo it should be easy possible to install, uninstall, restart a service that connects the Shelly 3EM to the VenusOS and GX devices from Victron.
