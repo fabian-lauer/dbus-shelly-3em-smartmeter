@@ -35,7 +35,9 @@ class DbusShelly3emService:
     # Create the mandatory objects
     self._dbusservice.add_path('/DeviceInstance', deviceinstance)
     #self._dbusservice.add_path('/ProductId', 16) # value used in ac_sensor_bridge.cpp of dbus-cgwacs
-    self._dbusservice.add_path('/ProductId', 0xFFFF) # id assigned by Victron Support from SDM630v2.py
+    #self._dbusservice.add_path('/ProductId', 0xFFFF) # id assigned by Victron Support from SDM630v2.py
+    self._dbusservice.add_path('/ProductId', 45069) # found on https://www.sascha-curth.de/projekte/005_Color_Control_GX.html#experiment - should be an ET340 Engerie Meter
+    self._dbusservice.add_path('/DeviceType', 345) # found on https://www.sascha-curth.de/projekte/005_Color_Control_GX.html#experiment - should be an ET340 Engerie Meter
     self._dbusservice.add_path('/ProductName', productname)
     self._dbusservice.add_path('/CustomName', productname)    
     self._dbusservice.add_path('/Latency', None)    
@@ -141,12 +143,12 @@ class DbusShelly3emService:
        self._dbusservice['/Ac/L1/Power'] = meter_data['emeters'][0]['power']
        self._dbusservice['/Ac/L2/Power'] = meter_data['emeters'][1]['power']
        self._dbusservice['/Ac/L3/Power'] = meter_data['emeters'][2]['power']
-       self._dbusservice['/Ac/L1/Energy/Forward'] = meter_data['emeters'][0]['power']/1000 if meter_data['emeters'][0]['power'] > 0 else 0 
-       self._dbusservice['/Ac/L2/Energy/Forward'] = meter_data['emeters'][1]['power']/1000 if meter_data['emeters'][1]['power'] > 0 else 0
-       self._dbusservice['/Ac/L3/Energy/Forward'] = meter_data['emeters'][2]['power']/1000 if meter_data['emeters'][2]['power'] > 0 else 0
-       self._dbusservice['/Ac/L1/Energy/Reverse'] = (meter_data['emeters'][0]['power']*-1/1000) if meter_data['emeters'][0]['power'] < 0 else 0
-       self._dbusservice['/Ac/L2/Energy/Reverse'] = (meter_data['emeters'][1]['power']*-1/1000) if meter_data['emeters'][1]['power'] < 0 else 0
-       self._dbusservice['/Ac/L3/Energy/Reverse'] = (meter_data['emeters'][2]['power']*-1/1000) if meter_data['emeters'][2]['power'] < 0 else 0    
+       self._dbusservice['/Ac/L1/Energy/Forward'] = (meter_data['emeters'][0]['total']/1000)
+       self._dbusservice['/Ac/L2/Energy/Forward'] = (meter_data['emeters'][1]['total']/1000)
+       self._dbusservice['/Ac/L3/Energy/Forward'] = (meter_data['emeters'][2]['total']/1000)
+       self._dbusservice['/Ac/L1/Energy/Reverse'] = (meter_data['emeters'][0]['total_returned']/1000) 
+       self._dbusservice['/Ac/L2/Energy/Reverse'] = (meter_data['emeters'][1]['total_returned']/1000) 
+       self._dbusservice['/Ac/L3/Energy/Reverse'] = (meter_data['emeters'][2]['total_returned']/1000) 
        self._dbusservice['/Ac/Energy/Forward'] = self._dbusservice['/Ac/L1/Energy/Forward'] + self._dbusservice['/Ac/L2/Energy/Forward'] + self._dbusservice['/Ac/L3/Energy/Forward']
        self._dbusservice['/Ac/Energy/Reverse'] = self._dbusservice['/Ac/L1/Energy/Reverse'] + self._dbusservice['/Ac/L2/Energy/Reverse'] + self._dbusservice['/Ac/L3/Energy/Reverse'] 
        
@@ -194,10 +196,10 @@ def main():
       DBusGMainLoop(set_as_default=True)
      
       #formatting 
-      _kwh = lambda p, v: (str(round(v, 2)) + 'KWh')
-      _a = lambda p, v: (str(round(v, 1)) + 'A')
-      _w = lambda p, v: (str(round(v, 1)) + 'W')
-      _v = lambda p, v: (str(round(v, 1)) + 'V')   
+      _kwh = lambda p, v: (str(round(v, 2)) + ' KWh')
+      _a = lambda p, v: (str(round(v, 1)) + ' A')
+      _w = lambda p, v: (str(round(v, 1)) + ' W')
+      _v = lambda p, v: (str(round(v, 1)) + ' V')   
      
       #start our main-service
       pvac_output = DbusShelly3emService(
