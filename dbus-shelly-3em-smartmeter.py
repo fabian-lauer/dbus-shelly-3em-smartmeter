@@ -62,6 +62,7 @@ class DbusShelly3emService:
     self._lastMeterSumIn = 0;
     self._lastMeterSumOut = 0;
     self._lastMeterCounter = 0;
+    self._lastMeterTime = time.time()
  
     # add _update function 'timer'
     gobject.timeout_add(1000, self._update) # pause 1000ms before the next request
@@ -137,7 +138,7 @@ class DbusShelly3emService:
   def _getBalancingMeterResult(self, phaseSumIn, phaseSumOut):
     resultIn = 0
     resultOut = 0
-    debugMsg = "input sum %s/%s" % (phaseSumIn,phaseSumOut)
+    debugMsg = "(%s) input sum %s/%s" % (self._lastMeterCounter,phaseSumIn,phaseSumOut)
     
     #check config
     config = self._getConfig()
@@ -159,19 +160,35 @@ class DbusShelly3emService:
         resultOut = self._lastMeterSumOut + diffOut
         if diffOut >= diffIn:
             resultOut -= diffIn
+            
+        #next run values
+        #on next run we the result of this run - so the base is the same
+        self._lastMeterSumIn = resultIn
+        self._lastMeterSumOut = resultOut
         
-        debugMsg += " - result %s/%s" %(resultIn, resultOut)        
+        #debug, debug, debug....puhh
+        debugMsg += " - result %s/%s (%s/%s)" %(resultIn, resultOut, (phaseSumIn-resultIn), (phaseSumOut-resultOut))        
     else:
         #default case - lets take input for output
         #will help for next run
         resultIn = phaseSumIn
         resultOut = phaseSumOut
+        
+        #next run values
+        #on first run we take the input - so we use this for next run as a basis
+        #but on next run me must take the result - so on "3rd" run we take "result" as basis
+        self._lastMeterSumIn = phaseSumIn
+        self._lastMeterSumOut = phaseSumOut
+        
+        #debug output - identify else case
         debugMsg += " - else-case result=input"
     
-    # set values for next run
+    
+    # raise counter
     self._lastMeterCounter += 1
-    self._lastMeterSumIn = phaseSumIn
-    self._lastMeterSumOut = phaseSumOut
+        
+    # logging
+    logging.info(debugMsg)
     
     return resultIn, resultOut, debugMsg
     
@@ -192,18 +209,22 @@ class DbusShelly3emService:
        self._dbusservice['/Ac/L1/Power'] = meter_data['emeters'][0]['power']
        self._dbusservice['/Ac/L2/Power'] = meter_data['emeters'][1]['power']
        self._dbusservice['/Ac/L3/Power'] = meter_data['emeters'][2]['power']
-       self._dbusservice['/Ac/L1/Energy/Forward'] = round((meter_data['emeters'][0]['total']/1000), 6)
-       self._dbusservice['/Ac/L2/Energy/Forward'] = round((meter_data['emeters'][1]['total']/1000), 6)
-       self._dbusservice['/Ac/L3/Energy/Forward'] = round((meter_data['emeters'][2]['total']/1000), 6)
-       self._dbusservice['/Ac/L1/Energy/Reverse'] = round((meter_data['emeters'][0]['total_returned']/1000), 6)
-       self._dbusservice['/Ac/L2/Energy/Reverse'] = round((meter_data['emeters'][1]['total_returned']/1000), 6)
-       self._dbusservice['/Ac/L3/Energy/Reverse'] = round((meter_data['emeters'][2]['total_returned']/1000), 6)
+       self._dbusservice['/Ac/L1/Energy/Forward'] = (meter_data['emeters'][0]['total']/1000)
+       self._dbusservice['/Ac/L2/Energy/Forward'] = (meter_data['emeters'][1]['total']/1000)
+       self._dbusservice['/Ac/L3/Energy/Forward'] = (meter_data['emeters'][2]['total']/1000)
+       self._dbusservice['/Ac/L1/Energy/Reverse'] = (meter_data['emeters'][0]['total_returned']/1000)
+       self._dbusservice['/Ac/L2/Energy/Reverse'] = (meter_data['emeters'][1]['total_returned']/1000)
+       self._dbusservice['/Ac/L3/Energy/Reverse'] = (meter_data['emeters'][2]['total_returned']/1000)
        #self._dbusservice['/Ac/Energy/Forward'] = self._dbusservice['/Ac/L1/Energy/Forward'] + self._dbusservice['/Ac/L2/Energy/Forward'] + self._dbusservice['/Ac/L3/Energy/Forward']
        #self._dbusservice['/Ac/Energy/Reverse'] = self._dbusservice['/Ac/L1/Energy/Reverse'] + self._dbusservice['/Ac/L2/Energy/Reverse'] + self._dbusservice['/Ac/L3/Energy/Reverse'] 
        
-       _totalForward = round(self._dbusservice['/Ac/L1/Energy/Forward'] + self._dbusservice['/Ac/L2/Energy/Forward'] + self._dbusservice['/Ac/L3/Energy/Forward'], 6)
-       _totalReverse = round(self._dbusservice['/Ac/L1/Energy/Reverse'] + self._dbusservice['/Ac/L2/Energy/Reverse'] + self._dbusservice['/Ac/L3/Energy/Reverse'], 6)
-       self._dbusservice['/Ac/Energy/Forward'], self._dbusservice['/Ac/Energy/Reverse'], self._dbusservice['/Debug'] = self._getBalancingMeterResult(_totalForward, _totalReverse)
+       # only update Energy on first run or every 5min.
+       if (self._lastMeterCounter == 0) or ((time.time() - self._lastMeterTime) > 300):
+            _totalForward = self._dbusservice['/Ac/L1/Energy/Forward'] + self._dbusservice['/Ac/L2/Energy/Forward'] + self._dbusservice['/Ac/L3/Energy/Forward']
+            _totalReverse = self._dbusservice['/Ac/L1/Energy/Reverse'] + self._dbusservice['/Ac/L2/Energy/Reverse'] + self._dbusservice['/Ac/L3/Energy/Reverse']
+            self._dbusservice['/Ac/Energy/Forward'], self._dbusservice['/Ac/Energy/Reverse'], self._dbusservice['/Debug'] = self._getBalancingMeterResult(_totalForward, _totalReverse)
+            self._lastMeterTime = time.time()
+            
        
        #logging
        logging.debug("House Consumption (/Ac/Power): %s" % (self._dbusservice['/Ac/Power']))
