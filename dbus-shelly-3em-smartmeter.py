@@ -61,6 +61,8 @@ class DbusShelly3emService:
     # correct metering
     self._lastMeterSumIn = 0;
     self._lastMeterSumOut = 0;
+    self._lastResultIn = 0;
+    self._lastResultOut = 0;
     self._lastMeterCounter = 0;
     self._lastMeterTime = time.time()
  
@@ -148,26 +150,30 @@ class DbusShelly3emService:
         #calc diff values from last value to now
         #new values should be higher than current
         diffIn = phaseSumIn - self._lastMeterSumIn
-        diffOut = phaseSumOut - self._lastMeterSumOut
-        debugMsg += " - diff %s/%s" % (diffIn, diffOut)
+        diffOut = phaseSumOut - self._lastMeterSumOut        
+        debugMsg += " - last-meter-diff %s/%s" % (diffIn, diffOut)
         
         #resultIn
-        resultIn = self._lastMeterSumIn + diffIn
+        ###resultIn = self._lastMeterSumIn + diffIn
+        resultIn = self._lastResultIn + diffIn
         if diffOut >= diffIn:
             resultIn -= diffIn
             
         #resultOut
-        resultOut = self._lastMeterSumOut + diffOut
+        ###resultOut = self._lastMeterSumOut + diffOut
+        resultOut = self._lastResultOut + diffOut
         if diffOut >= diffIn:
             resultOut -= diffIn
             
         #next run values
         #on next run we the result of this run - so the base is the same
-        self._lastMeterSumIn = resultIn
-        self._lastMeterSumOut = resultOut
+        ###self._lastMeterSumIn = resultIn
+        ###self._lastMeterSumOut = resultOut
         
         #debug, debug, debug....puhh
-        debugMsg += " - result %s/%s (%s/%s)" %(resultIn, resultOut, (phaseSumIn-resultIn), (phaseSumOut-resultOut))        
+        diffResultIn = resultIn - self._lastResultIn
+        diffResultOut = resultOut - self._lastResultOut
+        debugMsg += " - result %s/%s (last-result-diff %s/%s)" %(resultIn, resultOut, diffResultIn, diffResultOut)        
     else:
         #default case - lets take input for output
         #will help for next run
@@ -177,12 +183,17 @@ class DbusShelly3emService:
         #next run values
         #on first run we take the input - so we use this for next run as a basis
         #but on next run me must take the result - so on "3rd" run we take "result" as basis
-        self._lastMeterSumIn = phaseSumIn
-        self._lastMeterSumOut = phaseSumOut
+        ###self._lastMeterSumIn = phaseSumIn
+        ###self._lastMeterSumOut = phaseSumOut
         
         #debug output - identify else case
         debugMsg += " - else-case result=input"
     
+    # set last values
+    self._lastMeterSumIn = phaseSumIn
+    self._lastMeterSumOut = phaseSumOut
+    self._lastResultIn = resultIn
+    self._lastResultOut = resultOut
     
     # raise counter
     self._lastMeterCounter += 1
@@ -218,8 +229,8 @@ class DbusShelly3emService:
        #self._dbusservice['/Ac/Energy/Forward'] = self._dbusservice['/Ac/L1/Energy/Forward'] + self._dbusservice['/Ac/L2/Energy/Forward'] + self._dbusservice['/Ac/L3/Energy/Forward']
        #self._dbusservice['/Ac/Energy/Reverse'] = self._dbusservice['/Ac/L1/Energy/Reverse'] + self._dbusservice['/Ac/L2/Energy/Reverse'] + self._dbusservice['/Ac/L3/Energy/Reverse'] 
        
-       # only update Energy on first run or every 5min.
-       if (self._lastMeterCounter == 0) or ((time.time() - self._lastMeterTime) > 300):
+       # only update Energy on first run or every 3min.
+       if (self._lastMeterCounter == 0) or ((time.time() - self._lastMeterTime) > 180):
             _totalForward = self._dbusservice['/Ac/L1/Energy/Forward'] + self._dbusservice['/Ac/L2/Energy/Forward'] + self._dbusservice['/Ac/L3/Energy/Forward']
             _totalReverse = self._dbusservice['/Ac/L1/Energy/Reverse'] + self._dbusservice['/Ac/L2/Energy/Reverse'] + self._dbusservice['/Ac/L3/Energy/Reverse']
             self._dbusservice['/Ac/Energy/Forward'], self._dbusservice['/Ac/Energy/Reverse'], self._dbusservice['/Debug'] = self._getBalancingMeterResult(_totalForward, _totalReverse)
