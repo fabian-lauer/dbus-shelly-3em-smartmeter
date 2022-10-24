@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # vim: ts=2 sw=2 et
 
+
 # import normal packages
 import platform
 import logging
@@ -185,15 +186,22 @@ class DbusShelly3emService:
 
 def main():
   #configure logging
-  logging.basicConfig(      format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-                            datefmt='%Y-%m-%d %H:%M:%S',
-                            level=logging.INFO,
-                            handlers=[
-                                logging.FileHandler("%s/current.log" % (os.path.dirname(os.path.realpath(__file__)))),
-                                logging.StreamHandler()
-                            ])
+    log_rotate_handler = logging.handlers.RotatingFileHandler(
+        maxBytes=5*1024*1024*10,
+        backupCount=2,
+        encoding=None,
+        delay=0,
+        filename="%s/current.log" % (os.path.dirname(os.path.realpath(__file__)))
+    )
+    logging.basicConfig(      format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+        level=logging.INFO,
+        handlers=[
+        logging.StreamHandler(),
+        log_rotate_handler
+    ])
 
-  try:
+    try:
       logging.info("Start");
 
       from dbus.mainloop.glib import DBusGMainLoop
