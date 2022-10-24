@@ -23,9 +23,9 @@ from vedbus import VeDbusService
 
 
 class DbusShelly3emService:
-  def __init__(self, servicename, deviceinstance, paths, productname='Shelly 3EM', connection='Shelly 3EM HTTP JSON service'):
+  def __init__(self, servicename, paths, productname='Shelly 3EM', connection='Shelly 3EM HTTP JSON service'):
     config = self._getConfig()
-    deviceinstance = int(config['DEFAULT']['Deviceinstance'])
+    deviceinstance = int(config['DEFAULT']['DeviceInstance'])
     customname = config['DEFAULT']['CustomName']
 
     self._dbusservice = VeDbusService("{}.http_{:02d}".format(servicename, deviceinstance))
@@ -245,7 +245,8 @@ def main():
       logging.info('Connected to dbus, and switching over to gobject.MainLoop() (= event based)')
       mainloop = gobject.MainLoop()
       mainloop.run()
-  except Exception as e:
-    logging.critical('Error at %s', 'main', exc_info=e)
+    except Exception as e:
+      logging.critical('Error at %s', 'main', exc_info=e)
+
 if __name__ == "__main__":
   main()
