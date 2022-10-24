@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# vim: ts=2 sw=2 et
+
 
 # import normal packages
 import platform
@@ -22,6 +24,10 @@ from vedbus import VeDbusService
 
 class DbusShelly3emService:
   def __init__(self, servicename, deviceinstance, paths, productname='Shelly 3EM', connection='Shelly 3EM HTTP JSON service'):
+    config = self._getConfig()
+    deviceinstance = int(config['DEFAULT']['Deviceinstance'])
+    customname = config['DEFAULT']['CustomName']
+
     self._dbusservice = VeDbusService("{}.http_{:02d}".format(servicename, deviceinstance))
     self._paths = paths
 
@@ -39,7 +45,7 @@ class DbusShelly3emService:
     self._dbusservice.add_path('/ProductId', 45069) # found on https://www.sascha-curth.de/projekte/005_Color_Control_GX.html#experiment - should be an ET340 Engerie Meter
     self._dbusservice.add_path('/DeviceType', 345) # found on https://www.sascha-curth.de/projekte/005_Color_Control_GX.html#experiment - should be an ET340 Engerie Meter
     self._dbusservice.add_path('/ProductName', productname)
-    self._dbusservice.add_path('/CustomName', productname)
+    self._dbusservice.add_path('/CustomName', customname)
     self._dbusservice.add_path('/Latency', None)
     self._dbusservice.add_path('/FirmwareVersion', 0.1)
     self._dbusservice.add_path('/HardwareVersion', 0)
@@ -211,7 +217,6 @@ def main():
       #start our main-service
       pvac_output = DbusShelly3emService(
         servicename='com.victronenergy.grid',
-        deviceinstance=40,
         paths={
           '/Ac/Energy/Forward': {'initial': 0, 'textformat': _kwh}, # energy bought from the grid
           '/Ac/Energy/Reverse': {'initial': 0, 'textformat': _kwh}, # energy sold to the grid
