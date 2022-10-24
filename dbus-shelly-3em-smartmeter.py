@@ -24,7 +24,7 @@ from vedbus import VeDbusService
 
 
 class DbusShelly3emService:
-  def __init__(self, servicename, deviceinstance, paths, productname='Shelly 3EM', connection='Shelly 3EM HTTP JSON service'):
+  def __init__(self, servicename, paths, productname='Shelly 3EM', connection='Shelly 3EM HTTP JSON service'):
     config = self._getConfig()
     deviceinstance = int(config['DEFAULT']['Deviceinstance'])
     customname = config['DEFAULT']['CustomName']
