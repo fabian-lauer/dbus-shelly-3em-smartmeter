@@ -5,6 +5,7 @@
 # import normal packages
 import platform
 import logging
+import logging.handlers
 import sys
 import os
 import sys
@@ -245,7 +246,8 @@ def main():
       logging.info('Connected to dbus, and switching over to gobject.MainLoop() (= event based)')
       mainloop = gobject.MainLoop()
       mainloop.run()
-  except Exception as e:
-    logging.critical('Error at %s', 'main', exc_info=e)
+    except Exception as e:
+        logging.critical('Error at %s', 'main', exc_info=e)
+
 if __name__ == "__main__":
   main()
