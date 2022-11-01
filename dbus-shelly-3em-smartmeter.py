@@ -28,6 +28,7 @@ class DbusShelly3emService:
     config = self._getConfig()
     deviceinstance = int(config['DEFAULT']['DeviceInstance'])
     customname = config['DEFAULT']['CustomName']
+    meter_type = config['DEFAULT']['Type']
 
     self._dbusservice = VeDbusService("{}.http_{:02d}".format(servicename, deviceinstance))
     self._paths = paths
@@ -42,8 +43,12 @@ class DbusShelly3emService:
     # Create the mandatory objects
     self._dbusservice.add_path('/DeviceInstance', deviceinstance)
     #self._dbusservice.add_path('/ProductId', 16) # value used in ac_sensor_bridge.cpp of dbus-cgwacs
-    #self._dbusservice.add_path('/ProductId', 0xFFFF) # id assigned by Victron Support from SDM630v2.py
-    self._dbusservice.add_path('/ProductId', 45069) # found on https://www.sascha-curth.de/projekte/005_Color_Control_GX.html#experiment - should be an ET340 Engerie Meter
+
+    if meter_type == 'PVINVERTER':
+      self._dbusservice.add_path('/ProductId', 0xFFFF) # id assigned by Victron Support from SDM630v2.py
+    else:
+      self._dbusservice.add_path('/ProductId', 45069) # found on https://www.sascha-curth.de/projekte/005_Color_Control_GX.html#experiment - should be an ET340 Engerie Meter
+
     self._dbusservice.add_path('/DeviceType', 345) # found on https://www.sascha-curth.de/projekte/005_Color_Control_GX.html#experiment - should be an ET340 Engerie Meter
     self._dbusservice.add_path('/ProductName', productname)
     self._dbusservice.add_path('/CustomName', customname)
@@ -139,17 +144,28 @@ class DbusShelly3emService:
        #get data from Shelly 3em
        meter_data = self._getShellyData()
 
+       config = self._getConfig()
+       meter_type = config['DEFAULT']['Type']
+
        #send data to DBus
-       self._dbusservice['/Ac/Power'] = meter_data['total_power'] # positive: consumption, negative: feed into grid
+       if meter_type == 'PVINVERTER':
+        self._dbusservice['/Ac/Power'] = (meter_data['total_power']*-1)
+        self._dbusservice['/Ac/L1/Power'] = (meter_data['emeters'][0]['power']*-1)
+        self._dbusservice['/Ac/L2/Power'] = (meter_data['emeters'][1]['power']*-1)
+        self._dbusservice['/Ac/L3/Power'] = (meter_data['emeters'][2]['power']*-1)
+       else:
+        self._dbusservice['/Ac/Power'] = meter_data['total_power']
+        self._dbusservice['/Ac/L1/Power'] = meter_data['emeters'][0]['power']
+        self._dbusservice['/Ac/L2/Power'] = meter_data['emeters'][1]['power']
+        self._dbusservice['/Ac/L3/Power'] = meter_data['emeters'][2]['power']
+
        self._dbusservice['/Ac/L1/Voltage'] = meter_data['emeters'][0]['voltage']
        self._dbusservice['/Ac/L2/Voltage'] = meter_data['emeters'][1]['voltage']
        self._dbusservice['/Ac/L3/Voltage'] = meter_data['emeters'][2]['voltage']
        self._dbusservice['/Ac/L1/Current'] = meter_data['emeters'][0]['current']
        self._dbusservice['/Ac/L2/Current'] = meter_data['emeters'][1]['current']
        self._dbusservice['/Ac/L3/Current'] = meter_data['emeters'][2]['current']
-       self._dbusservice['/Ac/L1/Power'] = meter_data['emeters'][0]['power']
-       self._dbusservice['/Ac/L2/Power'] = meter_data['emeters'][1]['power']
-       self._dbusservice['/Ac/L3/Power'] = meter_data['emeters'][2]['power']
+       
        self._dbusservice['/Ac/L1/Energy/Forward'] = (meter_data['emeters'][0]['total']/1000)
        self._dbusservice['/Ac/L2/Energy/Forward'] = (meter_data['emeters'][1]['total']/1000)
        self._dbusservice['/Ac/L3/Energy/Forward'] = (meter_data['emeters'][2]['total']/1000)
@@ -215,9 +231,18 @@ def main():
       _w = lambda p, v: (str(round(v, 1)) + ' W')
       _v = lambda p, v: (str(round(v, 1)) + ' V')
 
+      # get Config to set correct ServiceName
+      config = self._getConfig()
+      meter_type = config['DEFAULT']['Type']
+      service_name = ''
+      if meter_type == 'PVINVERTER':
+        service_name = 'com.victronenergy.pvinverter'
+      else:
+        service_name = 'com.victronenergy.grid'
+
       #start our main-service
       pvac_output = DbusShelly3emService(
-        servicename='com.victronenergy.grid',
+        servicename=service_name,
         paths={
           '/Ac/Energy/Forward': {'initial': 0, 'textformat': _kwh}, # energy bought from the grid
           '/Ac/Energy/Reverse': {'initial': 0, 'textformat': _kwh}, # energy sold to the grid

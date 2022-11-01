@@ -31,7 +31,7 @@ This project is my first on GitHub and with the Victron Venus OS, so I took some
 As mentioned above the script is inspired by @RalfZim fronius smartmeter implementation.
 So what is the script doing:
 - Running as a service
-- connecting to DBus of the Venus OS `com.victronenergy.grid.http_40`
+- connecting to DBus of the Venus OS `com.victronenergy.grid.http_40` or `com.victronenergy.pvinverter.http_40`
 - After successful DBus connection Shelly 3EM is accessed via REST-API - simply the /status is called and a JSON is returned with all details
   A sample JSON file from Shelly 3EM can be found [here](docs/shelly3em-status-sample.json)
 - Serial/MAC is taken from the response as device serial
@@ -42,6 +42,7 @@ Thats it 😄
 
 ### Pictures
 ![Tile Overview](img/venus-os-tile-overview.PNG)
+![Tile Overview as PVINVERTER](img/venus-os-remote-console-pvinverter.png)
 ![Remote Console - Overview](img/venus-os-remote-console-overview.PNG) 
 ![SmartMeter - Values](img/venus-os-shelly3em-smartmeter.PNG)
 ![SmartMeter - Device Details](img/venus-os-shelly3em-smartmeter-devicedetails.PNG)
@@ -72,6 +73,7 @@ Within the project there is a file `/data/dbus-shelly-3em-smartmeter/config.ini`
 | ------------- | ------------- | ------------- |
 | DEFAULT  | AccessType | Fixed value 'OnPremise' |
 | DEFAULT  | SignOfLifeLog  | Time in minutes how often a status is added to the log-file `current.log` with log-level INFO |
+| DEFAULT  | Type | use 'GRID' or 'PVINVERTER' to set the type of the shelly 3EM
 | ONPREMISE  | Host | IP or hostname of on-premise Shelly 3EM web-interface |
 | ONPREMISE  | Username | Username for htaccess login - leave blank if no username/password required |
 | ONPREMISE  | Password | Password for htaccess login - leave blank if no username/password required |
@@ -79,7 +81,8 @@ Within the project there is a file `/data/dbus-shelly-3em-smartmeter/config.ini`
 
 
 ## Used documentation
-- https://github.com/victronenergy/venus/wiki/dbus#grid   DBus paths for Victron namespace
+- https://github.com/victronenergy/venus/wiki/dbus#grid   DBus paths for Victron namespace GRID
+- https://github.com/victronenergy/venus/wiki/dbus#pvinverter   DBus paths for Victron namespace PVINVERTER
 - https://github.com/victronenergy/venus/wiki/dbus-api   DBus API from Victron
 - https://www.victronenergy.com/live/ccgx:root_access   How to get root access on GX device/Venus OS
 
