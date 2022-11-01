@@ -82,7 +82,7 @@ Within the project there is a file `/data/dbus-shelly-3em-smartmeter/config.ini`
 
 ## Used documentation
 - https://github.com/victronenergy/venus/wiki/dbus#grid   DBus paths for Victron namespace GRID
-- https://github.com/victronenergy/venus/wiki/dbus#pvinverter   DBus paths for Victron namespace PVINVERTER
+- https://github.com/victronenergy/venus/wiki/dbus#pv-inverters   DBus paths for Victron namespace PVINVERTER
 - https://github.com/victronenergy/venus/wiki/dbus-api   DBus API from Victron
 - https://www.victronenergy.com/live/ccgx:root_access   How to get root access on GX device/Venus OS
 

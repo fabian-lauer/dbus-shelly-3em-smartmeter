@@ -159,15 +159,12 @@ class DbusShelly3emService:
         self._dbusservice['/Ac/L1/Power'] = (meter_data['emeters'][0]['power']*-1)
         self._dbusservice['/Ac/L2/Power'] = (meter_data['emeters'][1]['power']*-1)
         self._dbusservice['/Ac/L3/Power'] = (meter_data['emeters'][2]['power']*-1)
-        self._dbusservice['/Ac/L1/Energy/Reverse'] = (meter_data['emeters'][0]['total']/1000)
-        self._dbusservice['/Ac/L2/Energy/Reverse'] = (meter_data['emeters'][1]['total']/1000)
-        self._dbusservice['/Ac/L3/Energy/Reverse'] = (meter_data['emeters'][2]['total']/1000)
+       
         self._dbusservice['/Ac/L1/Energy/Forward'] = (meter_data['emeters'][0]['total_returned']/1000)
         self._dbusservice['/Ac/L2/Energy/Forward'] = (meter_data['emeters'][1]['total_returned']/1000)
         self._dbusservice['/Ac/L3/Energy/Forward'] = (meter_data['emeters'][2]['total_returned']/1000)
         
-        self._dbusservice['/Ac/Energy/Reverse'] = self._dbusservice['/Ac/L1/Energy/Forward'] + self._dbusservice['/Ac/L2/Energy/Forward'] + self._dbusservice['/Ac/L3/Energy/Forward']
-        self._dbusservice['/Ac/Energy/Forward'] = self._dbusservice['/Ac/L1/Energy/Reverse'] + self._dbusservice['/Ac/L2/Energy/Reverse'] + self._dbusservice['/Ac/L3/Energy/Reverse']
+        self._dbusservice['/Ac/Energy/Forward'] = self._dbusservice['/Ac/L1/Energy/Forward'] + self._dbusservice['/Ac/L2/Energy/Forward'] + self._dbusservice['/Ac/L3/Energy/Forward']
 
        else:
         self._dbusservice['/Ac/Power'] = meter_data['total_power']
