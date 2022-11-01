@@ -24,16 +24,22 @@ from vedbus import VeDbusService
 
 
 class DbusShelly3emService:
-  def __init__(self, servicename, paths, productname='Shelly 3EM', connection='Shelly 3EM HTTP JSON service'):
+  def __init__(self, paths, productname='Shelly 3EM', connection='Shelly 3EM HTTP JSON service'):
     config = self._getConfig()
     deviceinstance = int(config['DEFAULT']['DeviceInstance'])
     customname = config['DEFAULT']['CustomName']
     meter_type = config['DEFAULT']['Type']
+    
+    service_name = ''
+    if meter_type == 'PVINVERTER':
+      service_name = 'com.victronenergy.pvinverter'
+    else:
+      service_name = 'com.victronenergy.grid'
 
-    self._dbusservice = VeDbusService("{}.http_{:02d}".format(servicename, deviceinstance))
+    self._dbusservice = VeDbusService("{}.http_{:02d}".format(service_name, deviceinstance))
     self._paths = paths
 
-    logging.debug("%s /DeviceInstance = %d" % (servicename, deviceinstance))
+    logging.debug("%s /DeviceInstance = %d" % (service_name, deviceinstance))
 
     # Create the management objects, as specified in the ccgx dbus-api document
     self._dbusservice.add_path('/Mgmt/ProcessName', __file__)
@@ -231,18 +237,8 @@ def main():
       _w = lambda p, v: (str(round(v, 1)) + ' W')
       _v = lambda p, v: (str(round(v, 1)) + ' V')
 
-      # get Config to set correct ServiceName
-      config = self._getConfig()
-      meter_type = config['DEFAULT']['Type']
-      service_name = ''
-      if meter_type == 'PVINVERTER':
-        service_name = 'com.victronenergy.pvinverter'
-      else:
-        service_name = 'com.victronenergy.grid'
-
       #start our main-service
       pvac_output = DbusShelly3emService(
-        servicename=service_name,
         paths={
           '/Ac/Energy/Forward': {'initial': 0, 'textformat': _kwh}, # energy bought from the grid
           '/Ac/Energy/Reverse': {'initial': 0, 'textformat': _kwh}, # energy sold to the grid
