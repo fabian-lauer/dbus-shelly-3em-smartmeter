@@ -1,5 +1,7 @@
 #!/bin/bash
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}"  )" &> /dev/null && pwd  )
+DAEMON_NAME=${SCRIPT_DIR##*/}
+
 # set permissions for script files
 chmod a+x $SCRIPT_DIR/restart.sh
 chmod 744 $SCRIPT_DIR/restart.sh
@@ -13,7 +15,7 @@ chmod 755 $SCRIPT_DIR/service/run
 
 
 # create sym-link to run script in deamon
-ln -s $SCRIPT_DIR/service /service/dbus-shelly-3em-smartmeter
+ln -s $SCRIPT_DIR/service /service/$DAEMON_NAME
 
 
 
