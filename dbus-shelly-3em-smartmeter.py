@@ -155,22 +155,17 @@ class DbusShelly3emService:
        #get data from Shelly 3em
        meter_data = self._getShellyData()
 
-       if self._dbusservice['/Role'] == 'pvinverter':
-         multi = -1
-       else:
-         multi = 1
-
        #send data to DBus
-       self._dbusservice['/Ac/Power'] = meter_data['total_power'] * multi
+       self._dbusservice['/Ac/Power'] = meter_data['total_power']
        self._dbusservice['/Ac/L1/Voltage'] = meter_data['emeters'][0]['voltage']
        self._dbusservice['/Ac/L2/Voltage'] = meter_data['emeters'][1]['voltage']
        self._dbusservice['/Ac/L3/Voltage'] = meter_data['emeters'][2]['voltage']
        self._dbusservice['/Ac/L1/Current'] = meter_data['emeters'][0]['current']
        self._dbusservice['/Ac/L2/Current'] = meter_data['emeters'][1]['current']
        self._dbusservice['/Ac/L3/Current'] = meter_data['emeters'][2]['current']
-       self._dbusservice['/Ac/L1/Power'] = meter_data['emeters'][0]['power'] * multi
-       self._dbusservice['/Ac/L2/Power'] = meter_data['emeters'][1]['power'] * multi
-       self._dbusservice['/Ac/L3/Power'] = meter_data['emeters'][2]['power'] * multi
+       self._dbusservice['/Ac/L1/Power'] = meter_data['emeters'][0]['power']
+       self._dbusservice['/Ac/L2/Power'] = meter_data['emeters'][1]['power']
+       self._dbusservice['/Ac/L3/Power'] = meter_data['emeters'][2]['power']
        self._dbusservice['/Ac/L1/Energy/Forward'] = (meter_data['emeters'][0]['total']/1000)
        self._dbusservice['/Ac/L2/Energy/Forward'] = (meter_data['emeters'][1]['total']/1000)
        self._dbusservice['/Ac/L3/Energy/Forward'] = (meter_data['emeters'][2]['total']/1000)
