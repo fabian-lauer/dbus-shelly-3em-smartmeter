@@ -29,6 +29,7 @@ class DbusShelly3emService:
     deviceinstance = int(config['DEFAULT']['DeviceInstance'])
     customname = config['DEFAULT']['CustomName']
     role = config['DEFAULT']['Role']
+    EM24 = config['DEFAULT']['EmualteEM24']
 
     allowed_roles = ['pvinverter','grid']
     if role in allowed_roles:
@@ -37,11 +38,14 @@ class DbusShelly3emService:
         logging.error("Configured Role: %s is not in the allowed list")
         exit()
 
-    # found on https://www.sascha-curth.de/projekte/005_Color_Control_GX.html#experiment - should be an ET340 Engerie Meter
     if role == 'pvinverter':
         productid = 0xA144
     else:
         productid = 45069
+
+    if EmualteEM24:
+        productid = 0xb017
+        self._dbusservice.add_path('/SwitchPos', 1)
 
     self._dbusservice = VeDbusService("{}.http_{:02d}".format(servicename, deviceinstance))
     self._paths = paths
