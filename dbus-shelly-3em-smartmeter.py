@@ -29,7 +29,6 @@ class DbusShelly3emService:
     deviceinstance = int(config['DEFAULT']['DeviceInstance'])
     customname = config['DEFAULT']['CustomName']
     role = config['DEFAULT']['Role']
-    EM24 = config['DEFAULT']['EmulateEM24']
 
     allowed_roles = ['pvinverter','grid']
     if role in allowed_roles:
@@ -45,10 +44,6 @@ class DbusShelly3emService:
 
     self._dbusservice = VeDbusService("{}.http_{:02d}".format(servicename, deviceinstance))
     self._paths = paths
-
-    if EM24:
-      productid = 0xb017
-      self._dbusservice.add_path('/SwitchPos', 1)
 
     logging.debug("%s /DeviceInstance = %d" % (servicename, deviceinstance))
 
