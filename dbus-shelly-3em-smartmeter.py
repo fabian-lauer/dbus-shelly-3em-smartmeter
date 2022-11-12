@@ -104,7 +104,7 @@ class DbusShelly3emService:
  
   def _getShellyData(self):
     URL = self._getShellyStatusUrl()
-    meter_r = requests.get(url = URL)
+    meter_r = requests.get(url = URL, timeout=5)
     
     # check for response
     if not meter_r:
@@ -158,14 +158,18 @@ class DbusShelly3emService:
        logging.debug("House Reverse (/Ac/Energy/Revers): %s" % (self._dbusservice['/Ac/Energy/Reverse']))
        logging.debug("---");
        
-       # increment UpdateIndex - to show that new data is available
-       index = self._dbusservice['/UpdateIndex'] + 1  # increment index
-       if index > 255:   # maximum value of the index
-         index = 0       # overflow from 255 to 0
-       self._dbusservice['/UpdateIndex'] = index
+       # increment UpdateIndex - to show that new data is available an wrap
+       self._dbusservice['/UpdateIndex'] = (self._dbusservice['/UpdateIndex'] + 1 ) % 256
 
        #update lastupdate vars
-       self._lastUpdate = time.time()              
+       self._lastUpdate = time.time()
+    except (ValueError, requests.exceptions.ConnectionError, requests.exceptions.Timeout, ConnectionError):
+       logging.critical('Error getting data from Shelly - check network or Shelly status. Setting power values to 0')
+       self._dbusservice['/Ac/L1/Power'] = 0                                       
+       self._dbusservice['/Ac/L2/Power'] = 0                                       
+       self._dbusservice['/Ac/L3/Power'] = 0
+       self._dbusservice['/Ac/Power'] = 0
+       self._dbusservice['/UpdateIndex'] = (self._dbusservice['/UpdateIndex'] + 1 ) % 256        
     except Exception as e:
        logging.critical('Error at %s', '_update', exc_info=e)
        
@@ -175,14 +179,28 @@ class DbusShelly3emService:
   def _handlechangedvalue(self, path, value):
     logging.debug("someone else updated %s to %s" % (path, value))
     return True # accept the change
- 
+
+
+
+
+def getLogLevel():
+  config = configparser.ConfigParser()
+  config.read("%s/config.ini" % (os.path.dirname(os.path.realpath(__file__))))
+  logLevelString = config['DEFAULT']['LogLevel']
+  
+  if logLevelString:
+    level = logging.getLevelName(logLevelString)
+  else:
+    level = logging.INFO
+    
+  return level
 
 
 def main():
   #configure logging
   logging.basicConfig(      format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
                             datefmt='%Y-%m-%d %H:%M:%S',
-                            level=logging.INFO,
+                            level=getLogLevel(),
                             handlers=[
                                 logging.FileHandler("%s/current.log" % (os.path.dirname(os.path.realpath(__file__)))),
                                 logging.StreamHandler()
@@ -233,6 +251,8 @@ def main():
       logging.info('Connected to dbus, and switching over to gobject.MainLoop() (= event based)')
       mainloop = gobject.MainLoop()
       mainloop.run()            
+  except (ValueError, requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+    logging.critical('Error in main type %s', str(e))
   except Exception as e:
     logging.critical('Error at %s', 'main', exc_info=e)
 if __name__ == "__main__":
