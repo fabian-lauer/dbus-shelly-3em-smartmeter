@@ -72,6 +72,7 @@ Within the project there is a file `/data/dbus-shelly-3em-smartmeter/config.ini`
 | ------------- | ------------- | ------------- |
 | DEFAULT  | AccessType | Fixed value 'OnPremise' |
 | DEFAULT  | SignOfLifeLog  | Time in minutes how often a status is added to the log-file `current.log` with log-level INFO |
+| DEFAULT  | LogLevel  | Define the level of logging - lookup: https://docs.python.org/3/library/logging.html#levels |
 | ONPREMISE  | Host | IP or hostname of on-premise Shelly 3EM web-interface |
 | ONPREMISE  | Username | Username for htaccess login - leave blank if no username/password required |
 | ONPREMISE  | Password | Password for htaccess login - leave blank if no username/password required |
