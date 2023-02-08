@@ -12,9 +12,7 @@ This project is my first on GitHub and with the Victron Venus OS, so I took some
 - https://github.com/RalfZim/venus.dbus-fronius-smartmeter
 - https://github.com/victronenergy/dbus-smappee
 - https://github.com/Louisvdw/dbus-serialbattery
-- https://community.victronenergy.com/questions/85564/eastron-sdm630-modbus-energy-meter-community-editi.html
-
-
+- https://community.victronenergy.com/idea/114716/power-meter-lib-for-modbus-rtu-based-meters-from-a.html - [Old Thread](https://community.victronenergy.com/questions/85564/eastron-sdm630-modbus-energy-meter-community-editi.html)
 
 ## How it works
 ### My setup
