@@ -1,6 +1,8 @@
 #!/bin/bash
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}"  )" &> /dev/null && pwd  )
+DAEMON_NAME=${SCRIPT_DIR##*/}
 
-rm /service/dbus-shelly-3em-smartmeter
-kill $(pgrep -f 'supervise dbus-shelly-3em-smartmeter')
-chmod a-x /data/dbus-shelly-3em-smartmeter/service/run
-./restart.sh
+rm /service/$DAEMON_NAME
+kill $(pgrep -f 'supervise $DAEMON_NAME')
+chmod a-x $SCRIPT_DIR/service/run
+$SCRIPT_DIR/restart.sh

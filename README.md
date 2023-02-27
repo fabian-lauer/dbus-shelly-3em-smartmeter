@@ -73,7 +73,11 @@ Within the project there is a file `/data/dbus-shelly-3em-smartmeter/config.ini`
 | ------------- | ------------- | ------------- |
 | DEFAULT  | AccessType | Fixed value 'OnPremise' |
 | DEFAULT  | SignOfLifeLog  | Time in minutes how often a status is added to the log-file `current.log` with log-level INFO |
-| DEFAULT  | Type | use 'GRID' or 'PVINVERTER' to set the type of the shelly 3EM
+| DEFAULT  | CustomName  | Name of your device - usefull if you want to run multiple versions of the script |
+| DEFAULT  | DeviceInstance  | DeviceInstanceNumber e.g. 40 |
+| DEFAULT  | Role | use 'GRID' or 'PVINVERTER' to set the type of the shelly 3EM |
+| DEFAULT  | Position | Available Postions: 0 = AC, 1 = AC-Out 1, AC-Out 2 |
+| DEFAULT  | LogLevel  | Define the level of logging - lookup: https://docs.python.org/3/library/logging.html#levels |
 | ONPREMISE  | Host | IP or hostname of on-premise Shelly 3EM web-interface |
 | ONPREMISE  | Username | Username for htaccess login - leave blank if no username/password required |
 | ONPREMISE  | Password | Password for htaccess login - leave blank if no username/password required |
