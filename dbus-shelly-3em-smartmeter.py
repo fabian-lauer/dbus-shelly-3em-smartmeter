@@ -1,8 +1,10 @@
 #!/usr/bin/env python
- 
+# vim: ts=2 sw=2 et
+
 # import normal packages
 import platform 
 import logging
+import logging.handlers
 import sys
 import os
 import sys
@@ -21,7 +23,24 @@ from vedbus import VeDbusService
 
 
 class DbusShelly3emService:
-  def __init__(self, servicename, deviceinstance, paths, productname='Shelly 3EM', connection='Shelly 3EM HTTP JSON service'):
+  def __init__(self, paths, productname='Shelly 3EM', connection='Shelly 3EM HTTP JSON service'):
+    config = self._getConfig()
+    deviceinstance = int(config['DEFAULT']['DeviceInstance'])
+    customname = config['DEFAULT']['CustomName']
+    role = config['DEFAULT']['Role']
+
+    allowed_roles = ['pvinverter','grid']
+    if role in allowed_roles:
+        servicename = 'com.victronenergy.' + role
+    else:
+        logging.error("Configured Role: %s is not in the allowed list")
+        exit()
+
+    if role == 'pvinverter':
+        productid = 0xA144
+    else:
+        productid = 45069
+
     self._dbusservice = VeDbusService("{}.http_{:02d}".format(servicename, deviceinstance))
     self._paths = paths
  
@@ -34,17 +53,15 @@ class DbusShelly3emService:
  
     # Create the mandatory objects
     self._dbusservice.add_path('/DeviceInstance', deviceinstance)
-    #self._dbusservice.add_path('/ProductId', 16) # value used in ac_sensor_bridge.cpp of dbus-cgwacs
-    #self._dbusservice.add_path('/ProductId', 0xFFFF) # id assigned by Victron Support from SDM630v2.py
-    self._dbusservice.add_path('/ProductId', 45069) # found on https://www.sascha-curth.de/projekte/005_Color_Control_GX.html#experiment - should be an ET340 Engerie Meter
+    self._dbusservice.add_path('/ProductId', productid)
     self._dbusservice.add_path('/DeviceType', 345) # found on https://www.sascha-curth.de/projekte/005_Color_Control_GX.html#experiment - should be an ET340 Engerie Meter
     self._dbusservice.add_path('/ProductName', productname)
-    self._dbusservice.add_path('/CustomName', productname)    
-    self._dbusservice.add_path('/Latency', None)    
+    self._dbusservice.add_path('/CustomName', customname)
+    self._dbusservice.add_path('/Latency', None)
     self._dbusservice.add_path('/FirmwareVersion', 0.1)
     self._dbusservice.add_path('/HardwareVersion', 0)
     self._dbusservice.add_path('/Connected', 1)
-    self._dbusservice.add_path('/Role', 'grid')
+    self._dbusservice.add_path('/Role', role)
     self._dbusservice.add_path('/Position', 0) # normaly only needed for pvinverter
     self._dbusservice.add_path('/Serial', self._getShellySerial())
     self._dbusservice.add_path('/UpdateIndex', 0)
@@ -133,7 +150,7 @@ class DbusShelly3emService:
        meter_data = self._getShellyData()
        
        #send data to DBus
-       self._dbusservice['/Ac/Power'] = meter_data['total_power'] # positive: consumption, negative: feed into grid
+       self._dbusservice['/Ac/Power'] = meter_data['total_power']
        self._dbusservice['/Ac/L1/Voltage'] = meter_data['emeters'][0]['voltage']
        self._dbusservice['/Ac/L2/Voltage'] = meter_data['emeters'][1]['voltage']
        self._dbusservice['/Ac/L3/Voltage'] = meter_data['emeters'][2]['voltage']
@@ -231,8 +248,6 @@ def main():
      
       #start our main-service
       pvac_output = DbusShelly3emService(
-        servicename='com.victronenergy.grid',
-        deviceinstance=40,
         paths={
           '/Ac/Energy/Forward': {'initial': 0, 'textformat': _kwh}, # energy bought from the grid
           '/Ac/Energy/Reverse': {'initial': 0, 'textformat': _kwh}, # energy sold to the grid
