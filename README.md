@@ -21,17 +21,17 @@ This project is my first on GitHub and with the Victron Venus OS, so I took some
 - Shelly 3EM with latest firmware (20220209-094824/v1.11.8-g8c7bb8d)
   - 3-Phase installation (normal for Germany)
   - Connected to Wifi netowrk "A"
-  - IP 192.168.2.108/24  
-- Victron Energy Cerbo GX with Venus OS - Firmware v2.84
+  - IP 192.168.2.13/24  
+- Victron Energy Cerbo GX with Venus OS - Firmware v2.93
   - No other devices from Victron connected (still waiting for shipment of Multiplus-2)
   - Connected to Wifi netowrk "A"
-  - IP 192.168.2.110/24
+  - IP 192.168.2.20/24
 
 ### Details / Process
 As mentioned above the script is inspired by @RalfZim fronius smartmeter implementation.
 So what is the script doing:
 - Running as a service
-- connecting to DBus of the Venus OS `com.victronenergy.grid.http_40`
+- connecting to DBus of the Venus OS `com.victronenergy.grid.http_40` or `com.victronenergy.pvinverter.http_40`
 - After successful DBus connection Shelly 3EM is accessed via REST-API - simply the /status is called and a JSON is returned with all details
   A sample JSON file from Shelly 3EM can be found [here](docs/shelly3em-status-sample.json)
 - Serial/MAC is taken from the response as device serial
@@ -72,6 +72,10 @@ Within the project there is a file `/data/dbus-shelly-3em-smartmeter/config.ini`
 | ------------- | ------------- | ------------- |
 | DEFAULT  | AccessType | Fixed value 'OnPremise' |
 | DEFAULT  | SignOfLifeLog  | Time in minutes how often a status is added to the log-file `current.log` with log-level INFO |
+| DEFAULT  | CustomName  | Name of your device - usefull if you want to run multiple versions of the script |
+| DEFAULT  | DeviceInstance  | DeviceInstanceNumber e.g. 40 |
+| DEFAULT  | Role | use 'GRID' or 'PVINVERTER' to set the type of the shelly 3EM |
+| DEFAULT  | Position | Available Postions: 0 = AC, 1 = AC-Out 1, AC-Out 2 |
 | DEFAULT  | LogLevel  | Define the level of logging - lookup: https://docs.python.org/3/library/logging.html#levels |
 | ONPREMISE  | Host | IP or hostname of on-premise Shelly 3EM web-interface |
 | ONPREMISE  | Username | Username for htaccess login - leave blank if no username/password required |
@@ -80,7 +84,8 @@ Within the project there is a file `/data/dbus-shelly-3em-smartmeter/config.ini`
 
 
 ## Used documentation
-- https://github.com/victronenergy/venus/wiki/dbus#grid   DBus paths for Victron namespace
+- https://github.com/victronenergy/venus/wiki/dbus#grid   DBus paths for Victron namespace GRID
+- https://github.com/victronenergy/venus/wiki/dbus#pv-inverters   DBus paths for Victron namespace PVINVERTER
 - https://github.com/victronenergy/venus/wiki/dbus-api   DBus API from Victron
 - https://www.victronenergy.com/live/ccgx:root_access   How to get root access on GX device/Venus OS
 
