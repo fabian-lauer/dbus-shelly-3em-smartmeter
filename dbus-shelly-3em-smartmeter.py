@@ -62,7 +62,7 @@ class DbusShelly3emService:
     self._dbusservice.add_path('/HardwareVersion', 0)
     self._dbusservice.add_path('/Connected', 1)
     self._dbusservice.add_path('/Role', role)
-    self._dbusservice.add_path('/Position', 0) # normaly only needed for pvinverter
+    self._dbusservice.add_path('/Position', self._getShellyPosition()) # normaly only needed for pvinverter
     self._dbusservice.add_path('/Serial', self._getShellySerial())
     self._dbusservice.add_path('/UpdateIndex', 0)
  
@@ -104,8 +104,18 @@ class DbusShelly3emService:
         value = 0
     
     return int(value)
-  
-  
+ 
+ 
+  def _getShellyPosition(self):
+    config = self._getConfig()
+    value = config['DEFAULT']['Position']
+    
+    if not value: 
+        value = 0
+    
+    return int(value)
+ 
+ 
   def _getShellyStatusUrl(self):
     config = self._getConfig()
     accessType = config['DEFAULT']['AccessType']
@@ -160,47 +170,47 @@ class DbusShelly3emService:
         meter_data['emeters'][0] = meter_data['emeters'][remapL1-1]
         meter_data['emeters'][remapL1-1] = old_l1
        
-       #send data to DBus
-       self._dbusservice['/Ac/Power'] = meter_data['total_power']
-       self._dbusservice['/Ac/L1/Voltage'] = meter_data['emeters'][0]['voltage']
-       self._dbusservice['/Ac/L2/Voltage'] = meter_data['emeters'][1]['voltage']
-       self._dbusservice['/Ac/L3/Voltage'] = meter_data['emeters'][2]['voltage']
-       self._dbusservice['/Ac/L1/Current'] = meter_data['emeters'][0]['current']
-       self._dbusservice['/Ac/L2/Current'] = meter_data['emeters'][1]['current']
-       self._dbusservice['/Ac/L3/Current'] = meter_data['emeters'][2]['current']
-       self._dbusservice['/Ac/L1/Power'] = meter_data['emeters'][0]['power']
-       self._dbusservice['/Ac/L2/Power'] = meter_data['emeters'][1]['power']
-       self._dbusservice['/Ac/L3/Power'] = meter_data['emeters'][2]['power']
-       self._dbusservice['/Ac/L1/Energy/Forward'] = (meter_data['emeters'][0]['total']/1000)
-       self._dbusservice['/Ac/L2/Energy/Forward'] = (meter_data['emeters'][1]['total']/1000)
-       self._dbusservice['/Ac/L3/Energy/Forward'] = (meter_data['emeters'][2]['total']/1000)
-       self._dbusservice['/Ac/L1/Energy/Reverse'] = (meter_data['emeters'][0]['total_returned']/1000) 
-       self._dbusservice['/Ac/L2/Energy/Reverse'] = (meter_data['emeters'][1]['total_returned']/1000) 
-       self._dbusservice['/Ac/L3/Energy/Reverse'] = (meter_data['emeters'][2]['total_returned']/1000) 
-       
-       # Old version
-       #self._dbusservice['/Ac/Energy/Forward'] = self._dbusservice['/Ac/L1/Energy/Forward'] + self._dbusservice['/Ac/L2/Energy/Forward'] + self._dbusservice['/Ac/L3/Energy/Forward']
-       #self._dbusservice['/Ac/Energy/Reverse'] = self._dbusservice['/Ac/L1/Energy/Reverse'] + self._dbusservice['/Ac/L2/Energy/Reverse'] + self._dbusservice['/Ac/L3/Energy/Reverse'] 
-       
-       # New Version - from xris99
-       #Calc = 60min * 60 sec / 0.500 (refresh interval of 500ms) * 1000
-       if (self._dbusservice['/Ac/Power'] > 0):
-            self._dbusservice['/Ac/Energy/Forward'] = self._dbusservice['/Ac/Energy/Forward'] + (self._dbusservice['/Ac/Power']/(60*60/0.5*1000))            
-       if (self._dbusservice['/Ac/Power'] < 0):
-            self._dbusservice['/Ac/Energy/Reverse'] = self._dbusservice['/Ac/Energy/Reverse'] + (self._dbusservice['/Ac/Power']*-1/(60*60/0.5*1000))
+      #send data to DBus
+      self._dbusservice['/Ac/Power'] = meter_data['total_power']
+      self._dbusservice['/Ac/L1/Voltage'] = meter_data['emeters'][0]['voltage']
+      self._dbusservice['/Ac/L2/Voltage'] = meter_data['emeters'][1]['voltage']
+      self._dbusservice['/Ac/L3/Voltage'] = meter_data['emeters'][2]['voltage']
+      self._dbusservice['/Ac/L1/Current'] = meter_data['emeters'][0]['current']
+      self._dbusservice['/Ac/L2/Current'] = meter_data['emeters'][1]['current']
+      self._dbusservice['/Ac/L3/Current'] = meter_data['emeters'][2]['current']
+      self._dbusservice['/Ac/L1/Power'] = meter_data['emeters'][0]['power']
+      self._dbusservice['/Ac/L2/Power'] = meter_data['emeters'][1]['power']
+      self._dbusservice['/Ac/L3/Power'] = meter_data['emeters'][2]['power']
+      self._dbusservice['/Ac/L1/Energy/Forward'] = (meter_data['emeters'][0]['total']/1000)
+      self._dbusservice['/Ac/L2/Energy/Forward'] = (meter_data['emeters'][1]['total']/1000)
+      self._dbusservice['/Ac/L3/Energy/Forward'] = (meter_data['emeters'][2]['total']/1000)
+      self._dbusservice['/Ac/L1/Energy/Reverse'] = (meter_data['emeters'][0]['total_returned']/1000) 
+      self._dbusservice['/Ac/L2/Energy/Reverse'] = (meter_data['emeters'][1]['total_returned']/1000) 
+      self._dbusservice['/Ac/L3/Energy/Reverse'] = (meter_data['emeters'][2]['total_returned']/1000) 
+      
+      # Old version
+      #self._dbusservice['/Ac/Energy/Forward'] = self._dbusservice['/Ac/L1/Energy/Forward'] + self._dbusservice['/Ac/L2/Energy/Forward'] + self._dbusservice['/Ac/L3/Energy/Forward']
+      #self._dbusservice['/Ac/Energy/Reverse'] = self._dbusservice['/Ac/L1/Energy/Reverse'] + self._dbusservice['/Ac/L2/Energy/Reverse'] + self._dbusservice['/Ac/L3/Energy/Reverse'] 
+      
+      # New Version - from xris99
+      #Calc = 60min * 60 sec / 0.500 (refresh interval of 500ms) * 1000
+      if (self._dbusservice['/Ac/Power'] > 0):
+           self._dbusservice['/Ac/Energy/Forward'] = self._dbusservice['/Ac/Energy/Forward'] + (self._dbusservice['/Ac/Power']/(60*60/0.5*1000))            
+      if (self._dbusservice['/Ac/Power'] < 0):
+           self._dbusservice['/Ac/Energy/Reverse'] = self._dbusservice['/Ac/Energy/Reverse'] + (self._dbusservice['/Ac/Power']*-1/(60*60/0.5*1000))
 
-       
-       #logging
-       logging.debug("House Consumption (/Ac/Power): %s" % (self._dbusservice['/Ac/Power']))
-       logging.debug("House Forward (/Ac/Energy/Forward): %s" % (self._dbusservice['/Ac/Energy/Forward']))
-       logging.debug("House Reverse (/Ac/Energy/Revers): %s" % (self._dbusservice['/Ac/Energy/Reverse']))
-       logging.debug("---");
-       
-       # increment UpdateIndex - to show that new data is available an wrap
-       self._dbusservice['/UpdateIndex'] = (self._dbusservice['/UpdateIndex'] + 1 ) % 256
+      
+      #logging
+      logging.debug("House Consumption (/Ac/Power): %s" % (self._dbusservice['/Ac/Power']))
+      logging.debug("House Forward (/Ac/Energy/Forward): %s" % (self._dbusservice['/Ac/Energy/Forward']))
+      logging.debug("House Reverse (/Ac/Energy/Revers): %s" % (self._dbusservice['/Ac/Energy/Reverse']))
+      logging.debug("---");
+      
+      # increment UpdateIndex - to show that new data is available an wrap
+      self._dbusservice['/UpdateIndex'] = (self._dbusservice['/UpdateIndex'] + 1 ) % 256
 
-       #update lastupdate vars
-       self._lastUpdate = time.time()
+      #update lastupdate vars
+      self._lastUpdate = time.time()
     except (ValueError, requests.exceptions.ConnectionError, requests.exceptions.Timeout, ConnectionError):
        logging.critical('Error getting data from Shelly - check network or Shelly status. Setting power values to 0')
        self._dbusservice['/Ac/L1/Power'] = 0                                       
