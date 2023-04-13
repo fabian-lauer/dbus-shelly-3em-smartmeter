@@ -78,8 +78,13 @@ Within the project there is a file `/data/dbus-shelly-3em-smartmeter/config.ini`
 | ONPREMISE  | Host | IP or hostname of on-premise Shelly 3EM web-interface |
 | ONPREMISE  | Username | Username for htaccess login - leave blank if no username/password required |
 | ONPREMISE  | Password | Password for htaccess login - leave blank if no username/password required |
+| ONPREMISE  | L1Position | Which input on the Shelly in 3-phase grid is supplying a single Multi |
 
 
+### Remapping L1
+In a 3-phase grid with a single Multi, Venus OS expects L1 to be supplying the only Multi. This is not always the case. If for example your Multi is supplied by L3 (Input `C` on the Shelly) your GX device will show AC Loads as consuming from both L1 and L3. Setting `L1Position` to the appropriate Shelly input allows for remapping the phases and showing correct data on the GX device.
+
+If your single Multi is connected to the Input `A` on the Shelly you don't need to change this setting. Setting `L1Position` to `2` would swap the `B` CT & Voltage sensors data on the Shelly with the `A` CT & Voltage sensors data on the Shelly. Respectively, setting `L1Position` to `3` would swap `A` and `C` inputs.
 
 ## Used documentation
 - https://github.com/victronenergy/venus/wiki/dbus#grid   DBus paths for Victron namespace GRID
