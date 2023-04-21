@@ -211,8 +211,8 @@ class DbusShelly3emService:
 
       #update lastupdate vars
       self._lastUpdate = time.time()
-    except (ValueError, requests.exceptions.ConnectionError, requests.exceptions.Timeout, ConnectionError):
-       logging.critical('Error getting data from Shelly - check network or Shelly status. Setting power values to 0')
+    except (ValueError, requests.exceptions.ConnectionError, requests.exceptions.Timeout, ConnectionError) as e:
+       logging.critical('Error getting data from Shelly - check network or Shelly status. Setting power values to 0. Details: %s', e, exc_info=e)       
        self._dbusservice['/Ac/L1/Power'] = 0                                       
        self._dbusservice['/Ac/L2/Power'] = 0                                       
        self._dbusservice['/Ac/L3/Power'] = 0
