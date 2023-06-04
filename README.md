@@ -18,11 +18,11 @@ This project is my first on GitHub and with the Victron Venus OS, so I took some
 ### My setup
 - Shelly 3EM with latest firmware (20220209-094824/v1.11.8-g8c7bb8d)
   - 3-Phase installation (normal for Germany)
-  - Connected to Wifi netowrk "A"
+  - Connected to Wifi network "A"
   - IP 192.168.2.13/24  
 - Victron Energy Cerbo GX with Venus OS - Firmware v2.93
   - No other devices from Victron connected (still waiting for shipment of Multiplus-2)
-  - Connected to Wifi netowrk "A"
+  - Connected to Wifi network "A"
   - IP 192.168.2.20/24
 
 ### Details / Process
