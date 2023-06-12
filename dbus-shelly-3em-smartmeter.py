@@ -262,7 +262,7 @@ def main():
       DBusGMainLoop(set_as_default=True)
      
       #formatting 
-      _kwh = lambda p, v: (str(round(v, 2)) + ' KWh')
+      _kwh = lambda p, v: (str(round(v, 2)) + ' kWh')
       _a = lambda p, v: (str(round(v, 1)) + ' A')
       _w = lambda p, v: (str(round(v, 1)) + ' W')
       _v = lambda p, v: (str(round(v, 1)) + ' V')   
