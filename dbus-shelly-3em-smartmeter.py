@@ -169,6 +169,10 @@ class DbusShelly3emService:
         old_l1 = meter_data['emeters'][0]
         meter_data['emeters'][0] = meter_data['emeters'][remapL1-1]
         meter_data['emeters'][remapL1-1] = old_l1
+
+      # older shelly 3em firmware does not have a total_power field
+      if 'total_power' not in meter_data:
+        meter_data['total_power'] =  meter_data['emeters'][0]['power'] +  meter_data['emeters'][1]['power'] + meter_data['emeters'][2]['power']
        
       #send data to DBus
       self._dbusservice['/Ac/Power'] = meter_data['total_power']
