@@ -1,3 +1,12 @@
 #!/bin/sh
+#Script Directory
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+#Define the version filename
+FILENAME=$(realpath $SCRIPT_DIR/../version.txt)
 exec 2>&1
-python /data/dbus-shelly-3em-smartmeter/dbus-shelly-3em-smartmeter.py
+#Check if the file exists
+if [ -f "$FILENAME" ]; then
+    #If the file exists, print its contents to stdout
+    cat "$FILENAME"
+fi
+python $(realpath $SCRIPT_DIR/../dbus-shelly-3em-smartmeter.py)

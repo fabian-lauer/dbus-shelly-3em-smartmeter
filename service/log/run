@@ -1,0 +1,4 @@
+#!/bin/sh
+exec 2>&1
+# documentation on how to use multilog https://manpages.debian.org/stretch/daemontools/multilog.8.en.html
+exec multilog t s153600 n2 /var/log/dbus-shelly-3em-smartmeter
