@@ -2,6 +2,7 @@
 # vim: ts=2 sw=2 et
 
 # import normal packages
+import math
 import platform 
 import logging
 import logging.handlers
@@ -25,6 +26,7 @@ from vedbus import VeDbusService
 class DbusShelly3emService:
   def __init__(self, paths, productname='Shelly 3EM', connection='Shelly 3EM HTTP JSON service'):
     config = self._getConfig()
+    self._getApiMode(config)  # Reject invalid settings before registering D-Bus.
     deviceinstance = int(config['DEFAULT']['DeviceInstance'])
     customname = config['DEFAULT']['CustomName']
     role = config['DEFAULT']['Role']
@@ -81,17 +83,17 @@ class DbusShelly3emService:
     gobject.timeout_add(self._getSignOfLifeInterval()*60*1000, self._signOfLife)
  
   def _getShellySerial(self):
-    meter_data = self._getShellyData()  
-    
-    if not meter_data['mac']:
-        raise ValueError("Response does not contain 'mac' attribute")
-    
-    serial = meter_data['mac']
+    config = self._getConfig()
+    endpoint = '/rpc/Shelly.GetDeviceInfo' if self._getApiMode(config) == 'rpc' else '/status'
+    data = self._requestShelly(endpoint, config)
+    serial = data.get('mac')
+    if not isinstance(serial, str) or not serial.strip():
+      raise ValueError("Shelly device identity response requires a nonempty 'mac'")
     return serial
- 
- 
+
+
   def _getConfig(self):
-    config = configparser.ConfigParser()
+    config = configparser.ConfigParser(interpolation=None)
     config.read("%s/config.ini" % (os.path.dirname(os.path.realpath(__file__))))
     return config;
  
@@ -116,37 +118,84 @@ class DbusShelly3emService:
     return int(value)
  
  
-  def _getShellyStatusUrl(self):
-    config = self._getConfig()
-    accessType = config['DEFAULT']['AccessType']
-    
-    if accessType == 'OnPremise': 
-        URL = "http://%s:%s@%s/status" % (config['ONPREMISE']['Username'], config['ONPREMISE']['Password'], config['ONPREMISE']['Host'])
-        URL = URL.replace(":@", "")
-    else:
-        raise ValueError("AccessType %s is not supported" % (config['DEFAULT']['AccessType']))
-    
-    return URL
-    
- 
+  def _getApiMode(self, config):
+    mode = config.get('ONPREMISE', 'ApiMode', fallback='legacy').strip().lower()
+    if mode not in ('legacy', 'rpc'):
+      raise ValueError("Invalid [ONPREMISE] ApiMode: expected legacy or rpc")
+    return mode
+
+  def _requestShelly(self, endpoint, config):
+    if config['DEFAULT']['AccessType'] != 'OnPremise':
+      raise ValueError("AccessType must be OnPremise")
+    host = config['ONPREMISE']['Host'].strip()
+    if not host or any(char in host for char in '@/\\?#'):
+      raise ValueError("Host must be a hostname or IP address, optionally with a port, without credentials")
+    mode = self._getApiMode(config)
+    username = config.get('ONPREMISE', 'Username', fallback='')
+    password = config.get('ONPREMISE', 'Password', fallback='')
+    auth = None
+    if username or password:
+      auth_class = requests.auth.HTTPDigestAuth if mode == 'rpc' else requests.auth.HTTPBasicAuth
+      auth = auth_class(username, password)
+    # Never embed credentials in URLs or include raw transport exceptions in logs.
+    try:
+      response = requests.get('http://' + host + endpoint, auth=auth,
+                              timeout=5, allow_redirects=False)
+    except requests.exceptions.RequestException:
+      raise ValueError("Shelly HTTP request failed (connection, timeout or transport error)") from None
+    if response.status_code in (401, 403):
+      raise ValueError("Shelly authentication failed; check Username and Password")
+    if not 200 <= response.status_code < 300:
+      raise ValueError("Shelly HTTP error: status %d" % response.status_code)
+    try:
+      data = response.json()
+    except ValueError:
+      raise ValueError("Shelly returned malformed JSON") from None
+    if not isinstance(data, dict):
+      raise ValueError("Shelly response must be a JSON object")
+    if 'error' in data or ('code' in data and 'message' in data):
+      raise ValueError("Shelly returned an RPC error response")
+    return data
+
+  @staticmethod
+  def _measurement(data, key):
+    value = data.get(key)
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+      raise ValueError("Shelly missing or invalid required measurement: %s" % key)
+    return value
+
   def _getShellyData(self):
-    URL = self._getShellyStatusUrl()
-    meter_r = requests.get(url = URL, timeout=5)
-    
-    # check for response
-    if not meter_r:
-        raise ConnectionError("No response from Shelly 3EM - %s" % (URL))
-    
-    meter_data = meter_r.json()     
-    
-    # check for Json
-    if not meter_data:
-        raise ValueError("Converting response to JSON failed")
-    
-    
-    return meter_data
- 
- 
+    config = self._getConfig()
+    mode = self._getApiMode(config)
+    endpoint = '/rpc/Shelly.GetStatus' if mode == 'rpc' else '/status'
+    data = self._requestShelly(endpoint, config)
+    if mode == 'rpc':
+      em, energy = data.get('em:0'), data.get('emdata:0')
+      if not isinstance(em, dict) or not isinstance(energy, dict):
+        raise ValueError("Unsupported Shelly RPC component layout: requires three-phase em:0 and emdata:0")
+      phases = []
+      for phase in ('a', 'b', 'c'):
+        phases.append({
+          'voltage': self._measurement(em, phase + '_voltage'),
+          'current': self._measurement(em, phase + '_current'),
+          'power': self._measurement(em, phase + '_act_power'),
+          # Both APIs use Wh. Conversion happens only when publishing to D-Bus.
+          'total': self._measurement(energy, phase + '_total_act_energy'),
+          'total_returned': self._measurement(energy, phase + '_total_act_ret_energy'),
+        })
+      return {'total_power': self._measurement(em, 'total_act_power'), 'emeters': phases}
+    phases = data.get('emeters')
+    if not isinstance(phases, list) or len(phases) != 3:
+      raise ValueError("Shelly legacy response requires three emeters")
+    self._measurement(data, 'total_power')
+    for phase in phases:
+      if not isinstance(phase, dict) or phase.get('is_valid') is False:
+        raise ValueError("Shelly legacy phase reading is invalid")
+      for key in ('voltage', 'current', 'power', 'total', 'total_returned'):
+        self._measurement(phase, key)
+    return data
+
+
   def _signOfLife(self):
     logging.info("--- Start: sign of life ---")
     logging.info("Last _update() call: %s" % (self._lastUpdate))
@@ -165,6 +214,8 @@ class DbusShelly3emService:
       except KeyError:
         remapL1 = 1
 
+      if remapL1 not in (1, 2, 3):
+        raise ValueError("L1Position must be 1, 2 or 3")
       if remapL1 > 1:
         old_l1 = meter_data['emeters'][0]
         meter_data['emeters'][0] = meter_data['emeters'][remapL1-1]
@@ -188,18 +239,11 @@ class DbusShelly3emService:
       self._dbusservice['/Ac/L2/Energy/Reverse'] = (meter_data['emeters'][1]['total_returned']/1000) 
       self._dbusservice['/Ac/L3/Energy/Reverse'] = (meter_data['emeters'][2]['total_returned']/1000) 
       
-      # Old version
-      #self._dbusservice['/Ac/Energy/Forward'] = self._dbusservice['/Ac/L1/Energy/Forward'] + self._dbusservice['/Ac/L2/Energy/Forward'] + self._dbusservice['/Ac/L3/Energy/Forward']
-      #self._dbusservice['/Ac/Energy/Reverse'] = self._dbusservice['/Ac/L1/Energy/Reverse'] + self._dbusservice['/Ac/L2/Energy/Reverse'] + self._dbusservice['/Ac/L3/Energy/Reverse'] 
-      
-      # New Version - from xris99
-      #Calc = 60min * 60 sec / 0.500 (refresh interval of 500ms) * 1000
-      if (self._dbusservice['/Ac/Power'] > 0):
-           self._dbusservice['/Ac/Energy/Forward'] = self._dbusservice['/Ac/Energy/Forward'] + (self._dbusservice['/Ac/Power']/(60*60/0.5*1000))            
-      if (self._dbusservice['/Ac/Power'] < 0):
-           self._dbusservice['/Ac/Energy/Reverse'] = self._dbusservice['/Ac/Energy/Reverse'] + (self._dbusservice['/Ac/Power']*-1/(60*60/0.5*1000))
+      # Publish independent cumulative counters, regardless of current power direction.
+      self._dbusservice['/Ac/Energy/Forward'] = sum(phase['total'] for phase in meter_data['emeters']) / 1000
+      self._dbusservice['/Ac/Energy/Reverse'] = sum(phase['total_returned'] for phase in meter_data['emeters']) / 1000
+      self._dbusservice['/Connected'] = 1
 
-      
       #logging
       logging.debug("House Consumption (/Ac/Power): %s" % (self._dbusservice['/Ac/Power']))
       logging.debug("House Forward (/Ac/Energy/Forward): %s" % (self._dbusservice['/Ac/Energy/Forward']))
@@ -212,7 +256,8 @@ class DbusShelly3emService:
       #update lastupdate vars
       self._lastUpdate = time.time()
     except (ValueError, requests.exceptions.ConnectionError, requests.exceptions.Timeout, ConnectionError) as e:
-       logging.critical('Error getting data from Shelly - check network or Shelly status. Setting power values to 0. Details: %s', e, exc_info=e)       
+       logging.critical('Error getting data from Shelly - check network or Shelly status. Setting power values to 0. Details: %s', e)
+       self._dbusservice['/Connected'] = 0
        self._dbusservice['/Ac/L1/Power'] = 0                                       
        self._dbusservice['/Ac/L2/Power'] = 0                                       
        self._dbusservice['/Ac/L3/Power'] = 0
@@ -232,7 +277,7 @@ class DbusShelly3emService:
 
 
 def getLogLevel():
-  config = configparser.ConfigParser()
+  config = configparser.ConfigParser(interpolation=None)
   config.read("%s/config.ini" % (os.path.dirname(os.path.realpath(__file__))))
   logLevelString = config['DEFAULT']['LogLevel']
   
